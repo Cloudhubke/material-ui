@@ -1,13 +1,6 @@
 import React from 'react';
-import pure from 'recompose/pure';
-import SvgIcon from 'material-ui/SvgIcon';
+import createSvgIcon from './utils/createSvgIcon';
 
-let ShortText = props =>
-  <SvgIcon {...props}>
-    <path d="M4 9h16v2H4zm0 4h10v2H4z" />
-  </SvgIcon>;
-
-ShortText = pure(ShortText);
-ShortText.muiName = 'SvgIcon';
-
-export default ShortText;
+export default createSvgIcon(
+  <React.Fragment><defs><path id="a" d="M0 0h24v24H0V0z" /></defs><path d="M4 9h16v2H4zm0 4h10v2H4z" /></React.Fragment>
+, 'ShortText');

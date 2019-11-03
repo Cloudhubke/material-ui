@@ -1,13 +1,6 @@
 import React from 'react';
-import pure from 'recompose/pure';
-import SvgIcon from 'material-ui/SvgIcon';
+import createSvgIcon from './utils/createSvgIcon';
 
-let Exposure = props =>
-  <SvgIcon {...props}>
-    <path d="M15 17v2h2v-2h2v-2h-2v-2h-2v2h-2v2h2zm5-15H4c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zM5 5h6v2H5V5zm15 15H4L20 4v16z" />
-  </SvgIcon>;
-
-Exposure = pure(Exposure);
-Exposure.muiName = 'SvgIcon';
-
-export default Exposure;
+export default createSvgIcon(
+  <React.Fragment><path fill="none" d="m0 0h24v24H0V0z" /><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zM6 7h5v1.5H6V7zm13 12H5L19 5v14zm-4.5-3v2H16v-2h2v-1.5h-2v-2h-1.5v2h-2V16z" /></React.Fragment>
+, 'Exposure');

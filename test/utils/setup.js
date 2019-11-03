@@ -1,4 +1,6 @@
-// @flow
-require('app-module-path').addPath(`${__dirname}'./../../`);
-require('./dom')();
-require('./consoleError')();
+const createDOM = require('./createDOM');
+
+process.browser = true;
+
+createDOM();
+require('./init');

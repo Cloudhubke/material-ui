@@ -1,59 +1,66 @@
+const confusingBrowserGlobals = require('confusing-browser-globals');
+const path = require('path');
+
 module.exports = {
-  // So parent files don't get applied
-  root: true,
+  root: true, // So parent files don't get applied
+  globals: {
+    preval: false, // Used in the documentation
+  },
   env: {
     es6: true,
     browser: true,
     node: true,
-    mocha: true,
   },
-  extends: ['airbnb', 'plugin:import/recommended'],
+  extends: ['plugin:import/recommended', 'airbnb', 'prettier', 'prettier/react'],
   parser: 'babel-eslint',
   parserOptions: {
     ecmaVersion: 7,
     sourceType: 'module',
   },
-  plugins: ['babel', 'import', 'jsx-a11y', 'mocha', 'flowtype', 'material-ui', 'prettier'],
+  plugins: ['babel', 'mocha', 'material-ui', 'react-hooks'],
   settings: {
     'import/resolver': {
       webpack: {
-        config: './docs/webpackBaseConfig.js',
+        config: path.join(__dirname, './docs/webpackBaseConfig.js'),
       },
     },
   },
+  /**
+   * Sorted alphanumerically within each group. built-in and each plugin form
+   * their own groups.
+   */
   rules: {
-    'linebreak-style': 'off', // Don't play nicely with Windows.
-    'arrow-body-style': 'off', // Not our taste?
-    'arrow-parens': 'off', // Incompatible with prettier
-    indent: 'off', // Incompatible with prettier
-    'space-before-function-paren': 'off', // Incompatible with prettier
-    'no-mixed-operators': 'off', // Incompatible with prettier
     'consistent-this': ['error', 'self'],
-    'max-len': [
-      'error',
-      100,
-      2,
-      {
-        ignoreUrls: true,
-      },
-    ], // airbnb is allowing some edge cases
-    'no-console': 'error', // airbnb is using warn
-    'no-alert': 'error', // airbnb is using warn
-    'no-param-reassign': 'off', // Not our taste?
-    'no-prototype-builtins': 'off', // airbnb use error
-    'object-curly-spacing': 'off', // use babel plugin rule
-    'no-restricted-properties': 'off', // To remove once react-docgen support ** operator.
+    'linebreak-style': 'off', // Doesn't play nicely with Windows
+    'no-alert': 'error',
+    // Strict, airbnb is using warn; allow warn and error for dev environments
+    'no-console': ['error', { allow: ['warn', 'error'] }],
+    'no-constant-condition': 'error',
+    // Airbnb use error
+    'no-param-reassign': 'off',
+    'no-prototype-builtins': 'off',
+    // Airbnb restricts isNaN and isFinite which are necessary for IE 11
+    // we have to be disciplined about the usage and ensure the Number type for its
+    // arguments
+    'no-restricted-globals': ['error'].concat(confusingBrowserGlobals),
+    'no-underscore-dangle': ['error', { allow: ['_rewriteUrlForNextExport'] }],
+    'prefer-arrow-callback': ['error', { allowNamedFunctions: true }],
+    'prefer-destructuring': 'off', // Destructuring harm grep potential.
 
-    'babel/object-curly-spacing': ['error', 'always'],
+    'jsx-a11y/label-has-associated-control': 'off',
+    'jsx-a11y/label-has-for': 'off', // deprecated
+    'jsx-a11y/no-autofocus': 'off', // We are a library, people do what they want.
 
-    'import/unambiguous': 'off', // scripts
-    'import/namespace': ['error', { allowComputed: true }],
-    'import/no-extraneous-dependencies': 'off',
+    'material-ui/docgen-ignore-before-comment': 'error',
+    'material-ui/restricted-path-imports': 'error',
 
-    'react/jsx-indent': 'off', // Incompatible with prettier
-    'react/jsx-closing-bracket-location': 'off', // Incompatible with prettier
-    'react/jsx-wrap-multilines': 'off', // Incompatible with prettier
-    'react/jsx-indent-props': 'off', // Incompatible with prettier
+    // This rule is great for raising people awareness of what a key is and how it works.
+    'react/no-array-index-key': 'off',
+    'react/destructuring-assignment': 'off',
+    // It's buggy
+    'react/forbid-prop-types': 'off',
+    'react/jsx-curly-brace-presence': 'off',
+    'react/jsx-filename-extension': ['error', { extensions: ['.js'] }], // airbnb is using .jsx
     'react/jsx-handler-names': [
       'error',
       {
@@ -62,54 +69,64 @@ module.exports = {
         eventHandlerPropPrefix: 'on',
       },
     ],
-    'react/require-default-props': 'off', // airbnb use error
-    'react/forbid-prop-types': 'off', // airbnb use error
-    'react/jsx-filename-extension': ['error', { extensions: ['.js'] }], // airbnb is using .jsx
-    'react/no-danger': 'error', // airbnb is using warn
-    'react/no-direct-mutation-state': 'error', // airbnb is disabling this rule
-    'react/no-find-dom-node': 'off', // I don't know
-    'react/no-unused-prop-types': 'off', // Is still buggy
-    'react/sort-prop-types': 'error', // airbnb do nothing here.
-    'react/sort-comp': [
-      2,
-      {
-        order: [
-          'type-annotations',
-          'static-methods',
-          'lifecycle',
-          // '/^handle.+$/', // wishlist -- needs above first
-          // '/^(get|set)(?!(InitialState$|DefaultProps$|ChildContext$)).+$/', // wishlist -- needs above first
-          'everything-else',
-          '/^render.+$/',
-          'render',
-        ],
-      },
-    ],
+    'react/no-danger': 'error',
+    // Strict, airbnb is using off
+    'react/no-direct-mutation-state': 'error',
+    'react/no-find-dom-node': 'off',
+    'react/no-multi-comp': 'off',
+    'react/require-default-props': 'off',
+    'react/sort-prop-types': 'error',
 
-    'material-ui/docgen-ignore-before-comment': 'error',
-
-    'mocha/handle-done-callback': 'error',
-    'mocha/no-exclusive-tests': 'error',
-    'mocha/no-global-tests': 'error',
-    'mocha/no-pending-tests': 'error',
-    'mocha/no-skipped-tests': 'error',
-
-    'flowtype/define-flow-type': 'error',
-    'flowtype/require-valid-file-annotation': ['error', 'always'],
-    'flowtype/require-parameter-type': 'off',
-    'flowtype/require-return-type': 'off',
-    'flowtype/space-after-type-colon': 'off',
-    'flowtype/space-before-type-colon': 'off',
-    'flowtype/type-id-match': 'off',
-    'flowtype/use-flow-type': 'error',
-
-    'prettier/prettier': [
+    'import/no-extraneous-dependencies': 'off', // It would be better to enable this rule.
+    'import/namespace': ['error', { allowComputed: true }],
+    'import/order': [
       'error',
       {
-        singleQuote: true,
-        printWidth: 100,
-        trailingComma: 'all',
+        groups: [['index', 'sibling', 'parent', 'internal', 'external', 'builtin']],
+        'newlines-between': 'never',
       },
     ],
+
+    'react-hooks/rules-of-hooks': 'error',
+    'react-hooks/exhaustive-deps': 'error',
   },
+  overrides: [
+    {
+      files: [
+        '**/test-utils/**/*.js',
+        // matching the pattern of the test runner
+        '*.test.js',
+      ],
+      env: {
+        mocha: true,
+      },
+      rules: {
+        // does not work with wildcard imports. Mistakes will throw at runtime anyway
+        'import/named': false,
+        // for expect style assertions
+        'no-unused-expressions': 'off',
+
+        'mocha/handle-done-callback': 'error',
+        'mocha/no-exclusive-tests': 'error',
+        'mocha/no-global-tests': 'error',
+        'mocha/no-identical-title': 'error',
+        'mocha/no-nested-tests': 'error',
+        'mocha/no-pending-tests': 'error',
+        'mocha/no-return-and-callback': 'error',
+        'mocha/no-sibling-hooks': 'error',
+        'mocha/no-skipped-tests': 'error',
+        'mocha/no-top-level-hooks': 'error',
+        'mocha/valid-suite-description': 'error',
+      },
+    },
+    {
+      files: ['docs/src/modules/components/**/*.js'],
+      rules: {
+        'material-ui/no-hardcoded-labels': [
+          'error',
+          { allow: ['Material-UI', 'Twitter', 'GitHub', 'Spectrum', 'StackOverflow'] },
+        ],
+      },
+    },
+  ],
 };

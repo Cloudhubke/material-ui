@@ -1,13 +1,6 @@
 import React from 'react';
-import pure from 'recompose/pure';
-import SvgIcon from 'material-ui/SvgIcon';
+import createSvgIcon from './utils/createSvgIcon';
 
-let PlaylistPlay = props =>
-  <SvgIcon {...props}>
-    <path d="M19 9H2v2h17V9zm0-4H2v2h17V5zM2 15h13v-2H2v2zm15-2v6l5-3-5-3z" />
-  </SvgIcon>;
-
-PlaylistPlay = pure(PlaylistPlay);
-PlaylistPlay.muiName = 'SvgIcon';
-
-export default PlaylistPlay;
+export default createSvgIcon(
+  <path d="M4 10h12v2H4zm0-4h12v2H4zm0 8h8v2H4zm10 0v6l5-3z" />
+, 'PlaylistPlay');

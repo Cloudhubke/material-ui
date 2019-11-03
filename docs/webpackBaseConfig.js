@@ -1,22 +1,20 @@
-// @flow weak
-const webpack = require('webpack');
 const path = require('path');
-const pkg = require('../package.json');
 
+// This module isn't used to build the documentation. We use Next.js for that.
+// This module is used by the visual regression tests to run the demos.
 module.exports = {
   context: path.resolve(__dirname),
-  plugins: [
-    new webpack.DefinePlugin({
-      'process.env': {
-        MATERIAL_UI_VERSION: JSON.stringify(pkg.version),
-      },
-    }),
-  ],
   resolve: {
+    modules: [path.join(__dirname, '../'), 'node_modules'],
     alias: {
+      '@material-ui/core': path.resolve(__dirname, '../packages/material-ui/src'),
+      '@material-ui/docs': path.resolve(__dirname, '../packages/material-ui-docs/src'),
+      '@material-ui/icons': path.resolve(__dirname, '../packages/material-ui-icons/src'),
+      '@material-ui/lab': path.resolve(__dirname, '../packages/material-ui-lab/src'),
+      '@material-ui/styles': path.resolve(__dirname, '../packages/material-ui-styles/src'),
+      '@material-ui/system': path.resolve(__dirname, '../packages/material-ui-system/src'),
+      '@material-ui/utils': path.resolve(__dirname, '../packages/material-ui-utils/src'),
       docs: path.resolve(__dirname, '../docs'),
-      'material-ui': path.resolve(__dirname, '../src'),
-      'material-ui-icons': path.resolve(__dirname, '../packages/material-ui-icons/src'),
     },
   },
   output: {
@@ -33,10 +31,6 @@ module.exports = {
         query: {
           cacheDirectory: true,
         },
-      },
-      {
-        test: /\.svg$/,
-        loader: 'file-loader',
       },
       {
         test: /\.md$/,

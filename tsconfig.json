@@ -3,15 +3,27 @@
     "module": "commonjs",
     "target": "es5",
     "lib": ["es6", "dom"],
-    "sourceMap": true,
     "jsx": "react",
     "moduleResolution": "node",
     "forceConsistentCasingInFileNames": true,
-    "suppressImplicitAnyIndexErrors": true,
-    "noEmit": true
+    "strict": true,
+    "noEmit": true,
+    "experimentalDecorators": true,
+    "baseUrl": "./",
+    "allowSyntheticDefaultImports": true,
+    "noErrorTruncation": true,
+    "allowJs": true,
+    "paths": {
+      "@material-ui/core": ["./packages/material-ui/src"],
+      "@material-ui/core/*": ["./packages/material-ui/src/*"],
+      "@material-ui/lab": ["./packages/material-ui-lab/src"],
+      "@material-ui/lab/*": ["./packages/material-ui-lab/src/*"],
+      "@material-ui/styles": ["./packages/material-ui-styles/src"],
+      "@material-ui/styles/*": ["./packages/material-ui-styles/src/*"],
+      "@material-ui/system": ["./packages/material-ui-system/src"],
+      "@material-ui/types": ["./packages/material-ui-types"],
+      "test/*": ["./test/*"]
+    }
   },
-  "include": [
-    "typings/*",
-    "test/typescript/*"
-  ]
+  "exclude": ["**/build/"]
 }

@@ -1,10 +1,12 @@
 {
-  "name": "next.js",
-  "version": "1.0.0",
+  "name": "nextjs",
+  "version": "4.0.0",
   "private": true,
   "dependencies": {
-    "material-ui": "next",
+    "@material-ui/core": "latest",
+    "clsx": "latest",
     "next": "latest",
+    "prop-types": "latest",
     "react": "latest",
     "react-dom": "latest"
   },

@@ -1,117 +1,247 @@
-/* eslint-disable no-console, flowtype/require-valid-file-annotation */
-
-import fs from 'fs';
+/* eslint-disable no-console */
+import fse from 'fs-extra';
 import yargs from 'yargs';
 import path from 'path';
 import rimraf from 'rimraf';
 import Mustache from 'mustache';
-import _ from 'lodash';
+import Queue from 'modules/waterfall/Queue';
+import util from 'util';
 import glob from 'glob';
 import mkdirp from 'mkdirp';
+import SVGO from 'svgo';
 
-const SVG_ICON_RELATIVE_REQUIRE = '../../SvgIcon';
-const SVG_ICON_ABSOLUTE_REQUIRE = 'material-ui/SvgIcon';
-const RENAME_FILTER_DEFAULT = './filters/rename/default';
-const RENAME_FILTER_MUI = './filters/rename/material-design-icons';
+const globAsync = util.promisify(glob);
+export const RENAME_FILTER_DEFAULT = './renameFilters/default';
+export const RENAME_FILTER_MUI = './renameFilters/material-design-icons';
 
-const DEFAULT_OPTIONS = {
-  muiRequire: 'absolute',
-  glob: '/**/*.svg',
-  innerPath: '',
-  renameFilter: RENAME_FILTER_DEFAULT,
-};
-
-/**
- * Return Pascal-Cased classname.
- *
- * @param {string} svgPath
- * @returns {string} class name
- */
-function pascalCase(destPath) {
-  const splitregex = new RegExp(`[${path.sep}-]+`);
-
-  let parts = destPath.replace('.js', '').split(splitregex);
-  parts = _.map(parts, part => {
-    return part.charAt(0).toUpperCase() + part.substring(1);
-  });
-
-  const className = parts.join('');
-
-  return className;
-}
-
-function getJsxString(svgPath, destPath, options) {
-  const className = pascalCase(destPath);
-
-  console.log(`  ${className}`);
-
-  const data = fs.readFileSync(svgPath, {
-    encoding: 'utf8',
-  });
-  const template = fs.readFileSync(path.join(__dirname, 'tpl/SvgIcon.js'), {
-    encoding: 'utf8',
-  });
-
-  // Extract the paths from the svg string
-  let paths = data.slice(data.indexOf('>') + 1);
-  paths = paths.slice(0, -6);
-  // Clean xml paths
-  paths = paths.replace(/xlink:href="#a"/g, '');
-  paths = paths.replace(/xlink:href="#c"/g, '');
-  paths = paths.replace(/fill-opacity=/g, 'fillOpacity=');
-  paths = paths.replace(/\s?fill=".*?"/g, '');
-  paths = paths.replace(/"\/>/g, '" />');
-
-  // Node acts weird if we put this directly into string concatenation
-  const muiRequireStmt =
-    options.muiRequire === 'relative' ? SVG_ICON_RELATIVE_REQUIRE : SVG_ICON_ABSOLUTE_REQUIRE;
-
-  return Mustache.render(template, {
-    muiRequireStmt,
-    paths,
-    className,
-  });
-}
+const svgo = new SVGO({
+  floatPrecision: 4,
+  plugins: [
+    { cleanupAttrs: true },
+    { removeDoctype: true },
+    { removeXMLProcInst: true },
+    { removeComments: true },
+    { removeMetadata: true },
+    { removeTitle: true },
+    { removeDesc: true },
+    { removeUselessDefs: true },
+    { removeXMLNS: true },
+    { removeEditorsNSData: true },
+    { removeEmptyAttrs: true },
+    { removeHiddenElems: true },
+    { removeEmptyText: true },
+    { removeEmptyContainers: true },
+    { removeViewBox: true },
+    { cleanupEnableBackground: true },
+    { minifyStyles: true },
+    { convertStyleToAttrs: true },
+    { convertColors: true },
+    { convertPathData: true },
+    { convertTransform: true },
+    { removeUnknownsAndDefaults: true },
+    { removeNonInheritableGroupAttrs: true },
+    { removeUselessStrokeAndFill: true },
+    { removeUnusedNS: true },
+    { cleanupIDs: true },
+    { cleanupNumericValues: true },
+    { cleanupListOfValues: true },
+    { moveElemsAttrsToGroup: true },
+    { moveGroupAttrsToElems: true },
+    { collapseGroups: true },
+    { removeRasterImages: true },
+    { mergePaths: true },
+    { convertShapeToPath: true },
+    { sortAttrs: true },
+    { removeDimensions: true },
+    { removeAttrs: true },
+    { removeElementsByAttr: true },
+    { removeStyleElement: true },
+    { removeScriptElement: true },
+  ],
+});
 
 /**
- * @param {string} svgPath
- * Absolute path to svg file to process.
+ * Return Pascal-Cased component name.
  *
  * @param {string} destPath
- * Path to jsx file relative to {options.outputDir}
- *
- * @param {object} options
+ * @returns {string} class name
  */
-function processFile(svgPath, destPath, options) {
-  const outputFileDir = path.dirname(path.join(options.outputDir, destPath));
+export function getComponentName(destPath) {
+  const splitregex = new RegExp(`[\\${path.sep}-]+`);
 
-  if (!fs.existsSync(outputFileDir)) {
+  const parts = destPath
+    .replace('.js', '')
+    .split(splitregex)
+    .map(part => part.charAt(0).toUpperCase() + part.substring(1));
+
+  return parts.join('');
+}
+
+async function generateIndex(options) {
+  const files = await globAsync(path.join(options.outputDir, '*.js'));
+  const index = files
+    .map(file => {
+      const typename = path.basename(file).replace('.js', '');
+      return `export { default as ${typename} } from './${typename}';\n`;
+    })
+    .join('');
+
+  await fse.writeFile(path.join(options.outputDir, 'index.js'), index);
+}
+
+// Noise introduced by Google by mistake
+const noises = [
+  ['<path fill="none" d="M0 0h24v24H0V0zm0 0h24v24H0V0zm0 0h24v24H0V0zm0 0h24v24H0V0z" />', ''],
+  ['<path fill="none" d="M0 0h24v24H0V0zm0 0h24v24H0V0z" />', ''],
+  ['<path fill="none" d="M0 0h24v24H0V0z" />', ''],
+  ['<path fill="none" d="M0 0h24v24H0z" />', ''],
+  ['="M0 0h24v24H0V0zm0 0h24v24H0V0z', '="'],
+  ['="M0 0h24v24H0zm0 0h24v24H0zm0 0h24v24H0z', '="'],
+];
+
+export async function cleanPaths({ svgPath, data }) {
+  // Remove hardcoded color fill before optimizing so that empty groups are removed
+  const input = data
+    .replace(/ fill="#010101"/g, '')
+    .replace(/<rect fill="none" width="24" height="24"\/>/g, '')
+    .replace(/<rect id="SVGID_1_" width="24" height="24"\/>/g, '');
+
+  const result = await svgo.optimize(input);
+
+  // Extract the paths from the svg string
+  // Clean xml paths
+  let paths = result.data
+    .replace(/<svg[^>]*>/g, '')
+    .replace(/<\/svg>/g, '')
+    .replace(/"\/>/g, '" />')
+    .replace(/fill-opacity=/g, 'fillOpacity=')
+    .replace(/xlink:href=/g, 'xlinkHref=')
+    .replace(/clip-rule=/g, 'clipRule=')
+    .replace(/fill-rule=/g, 'fillRule=')
+    .replace(/ clip-path=".+?"/g, '') // Fix visibility issue and save some bytes.
+    .replace(/<clipPath.+?<\/clipPath>/g, ''); // Remove unused definitions
+
+  const sizeMatch = svgPath.match(/^.*_([0-9]+)px.svg$/);
+  const size = sizeMatch ? Number(sizeMatch[1]) : null;
+
+  if (size !== 24) {
+    const scale = Math.round((24 / size) * 100) / 100; // Keep a maximum of 2 decimals
+    paths = paths.replace('clipPath="url(#b)" ', '');
+    paths = paths.replace(/<path /g, `<path transform="scale(${scale}, ${scale})" `);
+  }
+
+  noises.forEach(([search, replace]) => {
+    if (paths.indexOf(search) !== -1) {
+      paths = paths.replace(search, replace);
+    }
+  });
+
+  // Add a fragment when necessary.
+  if ((paths.match(/\/>/g) || []).length > 1) {
+    paths = `<React.Fragment>${paths}</React.Fragment>`;
+  }
+
+  return paths;
+}
+
+async function worker({ svgPath, options, renameFilter, template }) {
+  process.stdout.write('.');
+
+  const normalizedSvgPath = path.normalize(svgPath);
+  const svgPathObj = path.parse(normalizedSvgPath);
+  const innerPath = path
+    .dirname(normalizedSvgPath)
+    .replace(options.svgDir, '')
+    .replace(path.relative(process.cwd(), options.svgDir), ''); // for relative dirs
+  const destPath = renameFilter(svgPathObj, innerPath, options);
+
+  const outputFileDir = path.dirname(path.join(options.outputDir, destPath));
+  const exists2 = await fse.exists(outputFileDir);
+
+  if (!exists2) {
     console.log(`Making dir: ${outputFileDir}`);
     mkdirp.sync(outputFileDir);
   }
-  const fileString = getJsxString(svgPath, destPath, options);
-  const absDestPath = path.join(options.outputDir, destPath);
-  fs.writeFileSync(absDestPath, fileString);
-}
 
-/**
- * make index.js, it exports all of SVGIcon classes.
- * @param {object} options
- */
-function processIndex(options) {
-  const files = glob.sync(path.join(options.outputDir, '*.js'));
-  const results = [];
-  files.forEach(jsPath => {
-    const typename = path.basename(jsPath).replace('.js', '');
-    results.push(`export { default as ${typename} } from './${typename}';\n`);
+  const data = await fse.readFile(svgPath, { encoding: 'utf8' });
+  const paths = await cleanPaths({ svgPath, data });
+
+  const fileString = Mustache.render(template, {
+    paths,
+    componentName: getComponentName(destPath),
   });
-  const index = results.join('');
-  const absDestPath = path.join(options.outputDir, 'index.js');
-  fs.writeFileSync(absDestPath, index);
+
+  const absDestPath = path.join(options.outputDir, destPath);
+  await fse.writeFile(absDestPath, fileString);
 }
 
-function parseArgs() {
-  return yargs
+export async function main(options) {
+  try {
+    let originalWrite;
+
+    options.glob = options.glob || '/**/*.svg';
+    options.innerPath = options.innerPath || '';
+    options.renameFilter = options.renameFilter || RENAME_FILTER_DEFAULT;
+    options.disableLog = options.disableLog || false;
+
+    // Disable console.log opt, used for tests
+    if (options.disableLog) {
+      originalWrite = process.stdout.write;
+      process.stdout.write = () => {};
+    }
+
+    rimraf.sync(`${options.outputDir}/*.js`); // Clean old files
+
+    let renameFilter = options.renameFilter;
+    if (typeof renameFilter === 'string') {
+      // eslint-disable-next-line global-require, import/no-dynamic-require
+      renameFilter = require(renameFilter).default;
+    }
+    if (typeof renameFilter !== 'function') {
+      throw Error('renameFilter must be a function');
+    }
+    const exists1 = await fse.exists(options.outputDir);
+    if (!exists1) {
+      await fse.mkdir(options.outputDir);
+    }
+
+    const [svgPaths, template] = await Promise.all([
+      globAsync(path.join(options.svgDir, options.glob)),
+      fse.readFile(path.join(__dirname, 'templateSvgIcon.js'), {
+        encoding: 'utf8',
+      }),
+    ]);
+
+    const queue = new Queue(
+      svgPath =>
+        worker({
+          svgPath,
+          options,
+          renameFilter,
+          template,
+        }),
+      { concurrency: 8 },
+    );
+
+    queue.push(svgPaths);
+    await queue.wait({ empty: true });
+
+    await fse.copy(path.join(__dirname, '/legacy'), options.outputDir);
+    await fse.copy(path.join(__dirname, '/custom'), options.outputDir);
+
+    await generateIndex(options);
+
+    if (options.disableLog) {
+      // bring back stdout
+      process.stdout.write = originalWrite;
+    }
+  } catch (err) {
+    console.log(err);
+  }
+}
+
+if (require.main === module) {
+  const argv = yargs
     .usage("Build JSX components from SVG's.\nUsage: $0")
     .demand('output-dir')
     .describe('output-dir', 'Directory to output jsx components')
@@ -126,85 +256,12 @@ function parseArgs() {
     )
     .describe(
       'file-suffix',
-      'Filter only files ending with a suffix (pretty much only for material-ui-icons)',
+      'Filter only files ending with a suffix (pretty much only for @material-ui/icons)',
     )
     .describe(
       'rename-filter',
       `Path to JS module used to rename destination filename and path.
         Default: ${RENAME_FILTER_DEFAULT}`,
-    )
-    .options('mui-require', {
-      demand: false,
-      type: 'string',
-      describe: `Load material-ui dependencies (SvgIcon) relatively or absolutely.
-        (absolute|relative).
-        For material-ui distributions, relative, for anything else, you probably want absolute.`,
-    }).argv;
-}
-
-function main(options, callback) {
-  let originalWrite; // todo, add winston / other logging tool
-
-  options = _.defaults(options, DEFAULT_OPTIONS);
-  if (options.disableLog) {
-    // disable console.log opt, used for tests.
-    originalWrite = process.stdout.write;
-    process.stdout.write = () => {};
-  }
-
-  rimraf.sync(`${options.outputDir}/*.js`); // Clean old files
-  console.log('** Starting Build');
-
-  let renameFilter = options.renameFilter;
-  if (_.isString(renameFilter)) {
-    /* eslint-disable global-require, import/no-dynamic-require */
-    renameFilter = require(renameFilter);
-    /* eslint-enable */
-  }
-  if (!_.isFunction(renameFilter)) {
-    throw Error('renameFilter must be a function');
-  }
-  if (!fs.existsSync(options.outputDir)) {
-    fs.mkdirSync(options.outputDir);
-  }
-  const files = glob.sync(path.join(options.svgDir, options.glob));
-
-  files.forEach(svgPath => {
-    const svgPathObj = path.parse(svgPath);
-    const innerPath = path
-      .dirname(svgPath)
-      .replace(options.svgDir, '')
-      .replace(path.relative(process.cwd(), options.svgDir), ''); // for relative dirs
-    const destPath = renameFilter(svgPathObj, innerPath, options);
-
-    processFile(svgPath, destPath, options);
-  });
-
-  processIndex(options);
-
-  if (options.disableLog) {
-    // bring back stdout
-    process.stdout.write = originalWrite;
-  }
-
-  if (callback) {
-    callback();
-  }
-}
-
-if (require.main === module) {
-  const argv = parseArgs();
+    ).argv;
   main(argv);
 }
-
-export default {
-  pascalCase,
-  getJsxString,
-  processFile,
-  processIndex,
-  main,
-  SVG_ICON_RELATIVE_REQUIRE,
-  SVG_ICON_ABSOLUTE_REQUIRE,
-  RENAME_FILTER_DEFAULT,
-  RENAME_FILTER_MUI,
-};

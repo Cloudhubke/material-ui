@@ -1,19 +1,27 @@
-// @flow weak
-/* eslint-disable no-console */
-
 import { spy } from 'sinon';
 
+/**
+ * One alternative to this module is to use something like:
+ *
+ * let warning;
+ *
+ * beforeEach(() => {
+ *   warning = mock(console).expects('error');
+ * });
+ *
+ * afterEach(() => {
+ *   warning.restore();
+ * });
+ */
 class ConsoleErrorMock {
   consoleErrorContainer;
 
   spy = () => {
     this.consoleErrorContainer = console.error;
-    // $FlowFixMe
     console.error = spy();
   };
 
   reset = () => {
-    // $FlowFixMe
     console.error = this.consoleErrorContainer;
     delete this.consoleErrorContainer;
   };

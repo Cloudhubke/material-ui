@@ -1,13 +1,6 @@
 import React from 'react';
-import pure from 'recompose/pure';
-import SvgIcon from 'material-ui/SvgIcon';
+import createSvgIcon from './utils/createSvgIcon';
 
-let KeyboardArrowDown = props =>
-  <SvgIcon {...props}>
-    <path d="M7.41 7.84L12 12.42l4.59-4.58L18 9.25l-6 6-6-6z" />
-  </SvgIcon>;
-
-KeyboardArrowDown = pure(KeyboardArrowDown);
-KeyboardArrowDown.muiName = 'SvgIcon';
-
-export default KeyboardArrowDown;
+export default createSvgIcon(
+  <path d="M7.41 8.59L12 13.17l4.59-4.58L18 10l-6 6-6-6 1.41-1.41z" />
+, 'KeyboardArrowDown');

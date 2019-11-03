@@ -1,10 +1,9 @@
-/* eslint-disable flowtype/require-valid-file-annotation */
-
 const path = require('path');
 const webpackBaseConfig = require('../../docs/webpackBaseConfig');
 
 module.exports = Object.assign({}, webpackBaseConfig, {
   entry: path.resolve(__dirname, 'index.js'),
+  mode: 'development',
   output: {
     path: path.resolve(__dirname, '../../tmp'),
     filename: 'tests.js',

@@ -1,10 +1,8 @@
-// @flow weak
-
-import React, { Component } from 'react';
+import React from 'react';
 import PropTypes from 'prop-types';
-import classNames from 'classnames';
-import { withStyles } from 'material-ui/styles';
-import Input from 'material-ui/Input/Input';
+import clsx from 'clsx';
+import { withStyles } from '@material-ui/core/styles';
+import Input from '@material-ui/core/Input';
 
 const styles = {
   container: {
@@ -20,35 +18,26 @@ const styles = {
   },
 };
 
-class Inputs extends Component {
-  componentDidMount() {
-    this.focusInput.focus();
-  }
+function Inputs(props) {
+  const { classes } = props;
+  const inputRef = React.useRef();
 
-  focusInput = null;
+  React.useEffect(() => {
+    inputRef.current.focus();
+  }, []);
 
-  render() {
-    const { classes } = this.props;
-
-    return (
-      <div>
-        <div className={classes.container}>
-          <Input value="Hello world" className={classes.input} />
-          <Input placeholder="Placeholder" className={classes.input} />
-          <Input value="Disabled" className={classes.input} disabled />
-          <Input error value="Error" className={classes.input} />
-          <Input
-            value="Focused"
-            inputRef={node => {
-              this.focusInput = node;
-            }}
-            className={classes.input}
-          />
-        </div>
-        <Input value="Large input" className={classNames(classes.input, classes.large)} />
+  return (
+    <div>
+      <div className={classes.container}>
+        <Input value="Hello world" className={classes.input} />
+        <Input placeholder="Placeholder" className={classes.input} />
+        <Input value="Disabled" className={classes.input} disabled />
+        <Input error value="Error" className={classes.input} />
+        <Input value="Focused" inputRef={inputRef} className={classes.input} />
       </div>
-    );
-  }
+      <Input value="Large input" className={clsx(classes.input, classes.large)} />
+    </div>
+  );
 }
 
 Inputs.propTypes = {
